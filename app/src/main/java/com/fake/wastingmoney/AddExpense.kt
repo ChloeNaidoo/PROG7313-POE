@@ -1,26 +1,5 @@
 package com.fake.wastingmoney
 
-/*
- // Code Attribution:
- // Author: IIE
- // Source: Programming 3C Module Manual [PM1]
- // Student numbers: ST10145067, ST10081245, ST10264009, ST10368647, ST10397162
-
- // Code Attribution:
- // Author: IIE
- // Source: GitHub source code repository for the module [PM2]
- // URL: https://github.com/iie-PROG7313
- // [Accessed 25 September 2024]
- // Student numbers: ST10145067, ST10081245, ST10264009, ST10368647, ST10397162
-
- // Code Attribution:
- // Author: JetBrains
- // Source: Kotlin Documentation [PM3]
- // URL: https://kotlinlang.org/docs/home.html
- // [Accessed 25 September 2024]
- // Student numbers: ST10145067, ST10081245, ST10264009, ST10368647, ST10397162
- */
-
 import android.app.AlarmManager
 import android.app.DatePickerDialog
 import android.app.PendingIntent
@@ -54,6 +33,7 @@ import android.widget.Spinner
 import android.Manifest
 import android.os.Build
 import com.fake.wastingmoney.utils.ReminderReceiver
+import android.util.Log // Added for logging
 
 class AddExpense : AppCompatActivity() {
 
@@ -70,17 +50,20 @@ class AddExpense : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
 
     private val calendar = Calendar.getInstance()
-    private val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("dd MMM YYYY", Locale.getDefault()) // Changed to YYYY for full year
     private var selectedDocumentUri: Uri? = null
     private var tempCameraFile: File? = null
 
     // Variable to store the time for scheduling after permission is granted
     private var pendingReminderTimeInMillis: Long = -1
 
+    // New tag for logging
+    private val TAG = "AddExpense"
+
     companion object {
         private const val STORAGE_PERMISSION_CODE = 1001
         private const val CAMERA_PERMISSION_CODE = 1002
-        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1003 // New request code
+        // NOTIFICATION_PERMISSION_REQUEST_CODE is not needed as we use ActivityResultContracts.RequestPermission
     }
 
     private val exchangeRates = mapOf(
@@ -110,6 +93,7 @@ class AddExpense : AppCompatActivity() {
             setupCurrencySpinner()
             setupReminderButton()
         } catch (e: Exception) {
+            Log.e(TAG, "Error loading AddExpense: ${e.message}", e) // Log the error
             Toast.makeText(this, "Error loading AddExpense: ${e.message}", Toast.LENGTH_LONG).show()
             finish()
         }
@@ -131,6 +115,7 @@ class AddExpense : AppCompatActivity() {
             spinnerCurrency = findViewById(R.id.spinner_currency)
             btnSetReminder = findViewById(R.id.btn_set_reminder)
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize views: ${e.message}", e) // Log the error
             throw Exception("Failed to initialize views. Please check your layout file has all required IDs: ${e.message}")
         }
     }
@@ -243,8 +228,18 @@ class AddExpense : AppCompatActivity() {
                     this,
                     { _, hourOfDay, minute ->
                         calendar.set(year, month, dayOfMonth, hourOfDay, minute)
-                        pendingReminderTimeInMillis = calendar.timeInMillis
-                        requestNotificationPermissionAndSchedule() // Request permission first
+                        val selectedDateTimeMillis = calendar.timeInMillis
+
+                        // Check if the selected time is in the past
+                        if (selectedDateTimeMillis <= System.currentTimeMillis()) {
+                            Toast.makeText(this, "Please select a future time for the reminder.", Toast.LENGTH_LONG).show()
+                            pendingReminderTimeInMillis = -1 // Reset if in the past
+                            Log.w(TAG, "Attempted to set reminder in the past. Time reset.")
+                        } else {
+                            pendingReminderTimeInMillis = selectedDateTimeMillis
+                            Log.d(TAG, "Reminder time selected: ${SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date(pendingReminderTimeInMillis))}")
+                            requestNotificationPermissionAndSchedule() // Request permission first
+                        }
                     },
                     calendar.get(Calendar.HOUR_OF_DAY),
                     calendar.get(Calendar.MINUTE),
@@ -256,20 +251,29 @@ class AddExpense : AppCompatActivity() {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         )
+        // Set minDate to current time to prevent selecting past dates
+        datePicker.datePicker.minDate = System.currentTimeMillis() - 1000 // A small buffer to allow selecting "now"
         datePicker.show()
     }
 
     private fun requestNotificationPermissionAndSchedule() {
+        // Ensure that pendingReminderTimeInMillis is valid before proceeding
+        if (pendingReminderTimeInMillis == -1L) {
+            Toast.makeText(this, "Reminder time not valid. Please re-select.", Toast.LENGTH_SHORT).show()
+            Log.e(TAG, "requestNotificationPermissionAndSchedule called with invalid pendingReminderTimeInMillis.")
+            return
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                // Permission already granted, schedule the notification
+                Log.d(TAG, "Notification permission already granted. Scheduling notification.")
                 scheduleNotification(pendingReminderTimeInMillis)
             } else {
-                // Request permission
+                Log.d(TAG, "Requesting POST_NOTIFICATIONS permission.")
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         } else {
-            // No permission needed for older Android versions, schedule directly
+            Log.d(TAG, "Android version < 13. No POST_NOTIFICATIONS permission needed. Scheduling notification.")
             scheduleNotification(pendingReminderTimeInMillis)
         }
     }
@@ -278,30 +282,53 @@ class AddExpense : AppCompatActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
+            Log.d(TAG, "Notification permission granted.")
             // Permission granted, schedule the notification
-            scheduleNotification(pendingReminderTimeInMillis)
+            // Double-check if pendingReminderTimeInMillis is still valid here.
+            if (pendingReminderTimeInMillis != -1L && pendingReminderTimeInMillis > System.currentTimeMillis()) {
+                scheduleNotification(pendingReminderTimeInMillis)
+            } else {
+                Toast.makeText(this, "Reminder time is invalid or in the past after permission. Please try again.", Toast.LENGTH_LONG).show()
+                Log.e(TAG, "Permission granted but pendingReminderTimeInMillis was invalid: $pendingReminderTimeInMillis.")
+                pendingReminderTimeInMillis = -1 // Reset if invalid
+            }
         } else {
             // Permission denied
             Toast.makeText(this, "Notification permission denied. Cannot set reminder.", Toast.LENGTH_SHORT).show()
+            Log.w(TAG, "Notification permission denied by user.")
+            pendingReminderTimeInMillis = -1 // Reset if permission denied
         }
     }
 
     private fun scheduleNotification(timeInMillis: Long) {
-        if (timeInMillis == -1L) {
-            Toast.makeText(this, "Reminder time not set.", Toast.LENGTH_SHORT).show()
+        // Check again to ensure the time is valid and in the future just before scheduling
+        if (timeInMillis == -1L || timeInMillis <= System.currentTimeMillis()) {
+            Toast.makeText(this, "Reminder time is invalid or in the past. Not setting reminder.", Toast.LENGTH_LONG).show()
+            Log.e(TAG, "Attempted to schedule invalid reminder time: $timeInMillis (current: ${System.currentTimeMillis()})")
             return
         }
 
         val intent = Intent(this, ReminderReceiver::class.java)
+        // Ensure a truly unique request code for each reminder
+        // Using `timeInMillis.toInt()` is okay for basic use, but for production,
+        // consider a more collision-resistant ID if many reminders are possible,
+        // e.g., using a UUID or a combination of time and expense ID.
+        val uniqueRequestCode = (timeInMillis % 1000000000).toInt() + etDescription.text.hashCode()
+
         val pendingIntent = PendingIntent.getBroadcast(
-            this, 0, intent,
+            this,
+            uniqueRequestCode, // Use a unique request code for each reminder
+            intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        // For more reliable alarms even in Doze mode, use setExactAndAllowWhileIdle or setAlarmClock
+        // but be mindful of battery implications. For most reminders, setExact is sufficient.
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
 
         Toast.makeText(this, "Reminder set for ${SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date(timeInMillis))}", Toast.LENGTH_LONG).show()
+        Log.i(TAG, "Reminder scheduled for ${SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date(timeInMillis))} with request code $uniqueRequestCode")
         pendingReminderTimeInMillis = -1 // Reset after scheduling
     }
 
@@ -331,6 +358,7 @@ class AddExpense : AppCompatActivity() {
                 )
                 cameraLauncher.launch(photoUri)
             } catch (e: Exception) {
+                Log.e(TAG, "Error opening camera: ${e.message}", e) // Log the error
                 Toast.makeText(this, "Error opening camera: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         } else {
@@ -342,6 +370,7 @@ class AddExpense : AppCompatActivity() {
         try {
             imagePickerLauncher.launch("image/*")
         } catch (e: Exception) {
+            Log.e(TAG, "Error opening image picker: ${e.message}", e) // Log the error
             Toast.makeText(this, "Error opening image picker: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
@@ -349,6 +378,8 @@ class AddExpense : AppCompatActivity() {
     private fun selectDocument() {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // For Android 13+, READ_EXTERNAL_STORAGE is not needed for file pickers if you use GetContent()
+                // The system handles access to media/documents directly.
                 documentPickerLauncher.launch("*/*")
             } else {
                 if (checkStoragePermission()) {
@@ -358,6 +389,7 @@ class AddExpense : AppCompatActivity() {
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error opening file picker: ${e.message}", e) // Log the error
             Toast.makeText(this, "Error opening file picker: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
@@ -376,6 +408,7 @@ class AddExpense : AppCompatActivity() {
         try {
             val inputStream = contentResolver.openInputStream(sourceUri)
             if (inputStream == null) {
+                Log.e(TAG, "Failed to open input stream for URI: $sourceUri")
                 callback(null)
                 return
             }
@@ -401,6 +434,7 @@ class AddExpense : AppCompatActivity() {
 
             callback(Uri.fromFile(internalFile))
         } catch (e: Exception) {
+            Log.e(TAG, "Error copying file from $sourceUri: ${e.message}", e) // Log the error
             Toast.makeText(this, "Error copying file: ${e.message}", Toast.LENGTH_SHORT).show()
             callback(null)
         }
@@ -426,12 +460,15 @@ class AddExpense : AppCompatActivity() {
                 }
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Error getting file extension for URI: $uri, error: ${e.message}", e)
             "file"
         }
     }
 
     private fun checkStoragePermission(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Permissions like READ_EXTERNAL_STORAGE are not needed for GetContent() on API 33+
+            // The system handles file access directly.
             true
         } else {
             ContextCompat.checkSelfPermission(
@@ -475,14 +512,14 @@ class AddExpense : AppCompatActivity() {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     documentPickerLauncher.launch("*/*")
                 } else {
-                    Toast.makeText(this, "Storage permission denied", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Storage permission denied. Cannot select documents.", Toast.LENGTH_SHORT).show()
                 }
             }
             CAMERA_PERMISSION_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     takePhoto()
                 } else {
-                    Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Camera permission denied. Cannot take photos.", Toast.LENGTH_SHORT).show()
                 }
             }
             // The new notification permission request is handled by registerForActivityResult,
@@ -619,9 +656,11 @@ class AddExpense : AppCompatActivity() {
         }
 
         try {
+            // Use contentResolver.openInputStream directly on the Uri, it correctly handles
+            // various Uri types (file, content, etc.) after it's been copied to internal storage.
             val inputStream = contentResolver.openInputStream(selectedDocumentUri!!)
             if (inputStream == null) {
-                Toast.makeText(this, "Failed to open selected file", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Failed to open selected file for upload", Toast.LENGTH_SHORT).show()
                 resetButtonState()
                 return
             }
@@ -636,11 +675,14 @@ class AddExpense : AppCompatActivity() {
             saveToFirebase(uid, expenseWithDoc)
 
         } catch (e: Exception) {
+            Log.e(TAG, "Error reading file for upload: ${e.message}", e) // Log the error
             Toast.makeText(this, "Error reading file: ${e.message}", Toast.LENGTH_LONG).show()
             resetButtonState()
         }
     }
 
+    // This function is not used for selectedDocumentUri if it's already copied to internal storage
+    // but kept for completeness if needed elsewhere.
     private fun getFileExtensionFromFile(file: File): String {
         val fileName = file.name
         return if (fileName.contains(".")) {
@@ -666,6 +708,7 @@ class AddExpense : AppCompatActivity() {
         dbRef.child(key).setValue(expense)
             .addOnSuccessListener {
                 Toast.makeText(this, "Expense saved successfully!", Toast.LENGTH_SHORT).show()
+                Log.i(TAG, "Expense saved successfully for UID: $uid, Key: $key")
 
                 cleanupTempFiles()
                 clearForm()
@@ -674,6 +717,7 @@ class AddExpense : AppCompatActivity() {
                 redirectToTransactions()
             }
             .addOnFailureListener { exception ->
+                Log.e(TAG, "Failed to save expense: ${exception.message}", exception) // Log the error
                 Toast.makeText(
                     this,
                     "Failed to save expense: ${exception.message}",
@@ -688,13 +732,30 @@ class AddExpense : AppCompatActivity() {
     private fun cleanupTempFiles() {
         try {
             selectedDocumentUri?.let { uri ->
-                if (uri.scheme == "file") {
-                    File(uri.path!!).delete()
+                if (uri.scheme == "file" && uri.path != null) { // Ensure it's a file URI and path is not null
+                    val fileToDelete = File(uri.path!!)
+                    if (fileToDelete.exists() && fileToDelete.isFile) {
+                        if (fileToDelete.delete()) {
+                            Log.d(TAG, "Deleted temp file: ${fileToDelete.absolutePath}")
+                        } else {
+                            Log.w(TAG, "Failed to delete temp file: ${fileToDelete.absolutePath}")
+                        }
+                    }
                 }
             }
-            tempCameraFile?.delete()
+            tempCameraFile?.let {
+                if (it.exists() && it.isFile) {
+                    if (it.delete()) {
+                        Log.d(TAG, "Deleted temp camera file: ${it.absolutePath}")
+                    } else {
+                        Log.w(TAG, "Failed to delete temp camera file: ${it.absolutePath}")
+                    }
+                }
+            }
+            selectedDocumentUri = null // Clear the URI reference
+            tempCameraFile = null // Clear the file reference
         } catch (e: Exception) {
-            // Ignore cleanup errors
+            Log.e(TAG, "Error during cleanupTempFiles: ${e.message}", e) // Log cleanup errors
         }
     }
 
@@ -705,6 +766,7 @@ class AddExpense : AppCompatActivity() {
             val currentMonth = SimpleDateFormat("MMMM", Locale.getDefault()).format(Date()).lowercase()
             // You can implement this similar to your original logic
             // but simplified without the complex timeout handling
+            Log.d(TAG, "Updating budget data for category: $category, amount: $amount, month: $currentMonth")
         }
     }
 
@@ -771,12 +833,15 @@ class AddExpense : AppCompatActivity() {
                     btnUploadDocument.text = "Document Selected ✓"
                     btnUploadDocument.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
                     Toast.makeText(this, "Document selected successfully", Toast.LENGTH_SHORT).show()
+                    Log.d(TAG, "Document selected and copied to internal storage: $internalUri")
                 } else {
                     Toast.makeText(this, "Failed to process selected document", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "Failed to copy selected document to internal storage.")
                 }
             }
         } else {
             Toast.makeText(this, "No document selected", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "Document selection cancelled.")
         }
     }
 
@@ -788,12 +853,15 @@ class AddExpense : AppCompatActivity() {
                     btnUploadDocument.text = "Image Selected ✓"
                     btnUploadDocument.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
                     Toast.makeText(this, "Image selected successfully", Toast.LENGTH_SHORT).show()
+                    Log.d(TAG, "Image selected and copied to internal storage: $internalUri")
                 } else {
                     Toast.makeText(this, "Failed to process selected image", Toast.LENGTH_SHORT).show()
+                    Log.e(TAG, "Failed to copy selected image to internal storage.")
                 }
             }
         } else {
             Toast.makeText(this, "No image selected", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "Image selection cancelled.")
         }
     }
 
@@ -803,9 +871,16 @@ class AddExpense : AppCompatActivity() {
             btnUploadDocument.text = "Photo Taken ✓"
             btnUploadDocument.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_light))
             Toast.makeText(this, "Photo captured successfully", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "Photo captured and stored at: $selectedDocumentUri")
         } else {
+            // Only log if tempCameraFile was expected but didn't exist or capture failed
+            if (tempCameraFile != null) {
+                Log.w(TAG, "Failed to capture photo. tempCameraFile exists: ${tempCameraFile?.exists()}, Success: $success")
+            } else {
+                Log.w(TAG, "Failed to capture photo. tempCameraFile was null.")
+            }
             selectedDocumentUri = null
-            tempCameraFile?.delete()
+            tempCameraFile?.delete() // Attempt to clean up even if capture failed
             tempCameraFile = null
             Toast.makeText(this, "Failed to capture photo", Toast.LENGTH_SHORT).show()
         }
