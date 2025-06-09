@@ -1,6 +1,5 @@
 package com.fake.wastingmoney
-<<<<<<< HEAD
-=======
+
 /*
  // Code Attribution:
  // Author: IIE
@@ -21,7 +20,7 @@ package com.fake.wastingmoney
  // [Accessed 25 September 2024]
  // Student numbers: ST10145067, ST10081245, ST10264009, ST10368647, ST10397162
  */
->>>>>>> 6a51a25 (code attribution)
+
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

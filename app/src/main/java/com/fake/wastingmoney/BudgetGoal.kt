@@ -1,7 +1,6 @@
 package com.fake.wastingmoney
 
-<<<<<<< HEAD
-=======
+
 /*
  // Code Attribution:
  // Author: IIE
@@ -23,7 +22,6 @@ package com.fake.wastingmoney
  // Student numbers: ST10145067, ST10081245, ST10264009, ST10368647, ST10397162
  */
 
->>>>>>> 6a51a25 (code attribution)
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.widget.Toast
