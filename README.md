@@ -20,7 +20,7 @@ Currency Converter: Convert between international currencies (USD, EUR, GBP) usi
 Expense Reminders: Set reminders for bills, rent, subscriptions, or any future payments. Avoid late fees with timely reminders.
 
 # Watch a Demo Video
-Video demonstration: https://youtu.be/R7kxHdIj9mw
+Video demonstration: [https://youtu.be/R7kxHdIj9mw](https://youtu.be/fqaytOSxHrA)
 
 # How to Get Started
 # Option 1: Install Using Android Studio (For Developers)
