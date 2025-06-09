@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="24dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="12dp"
+    app:cardBackgroundColor="@android:color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="24dp">
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieTrophyAnimationView"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            app:lottie_rawRes="@raw/trophy"  app:lottie_autoPlay="true"
+            app:lottie_loop="false"
+            android:layout_marginBottom="16dp"/>
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/lottieConfettiAnimationView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:scaleType="centerCrop"
+            android:layout_marginTop="-200dp" app:lottie_rawRes="@raw/confetti" app:lottie_autoPlay="true"
+            app:lottie_loop="true"
+            app:lottie_speed="1.5"
+            />
+
+        <TextView
+            android:id="@+id/tvAchievementTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="7-Day Streak Achieved!"
+            android:textColor="#2E4A3A"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:id="@+id/tvAchievementMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Congratulations! You've logged in for 7 days in a row!"
+            android:textColor="#666666"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:layout_marginBottom="24dp"/>
+
+        <LinearLayout
+            android:id="@+id/streakIndicatorContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="24dp"
+            android:gravity="center">
+
+            <ImageView android:id="@+id/ivDay1" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/ic_streak_filled" android:layout_margin="4dp"/>
+            <ImageView android:id="@+id/ivDay2" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/ic_streak_filled" android:layout_margin="4dp"/>
+            <ImageView android:id="@+id/ivDay3" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/ic_streak_filled" android:layout_margin="4dp"/>
+            <ImageView android:id="@+id/ivDay4" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/ic_streak_filled" android:layout_margin="4dp"/>
+            <ImageView android:id="@+id/ivDay5" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/ic_streak_filled" android:layout_margin="4dp"/>
+            <ImageView android:id="@+id/ivDay6" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/ic_streak_filled" android:layout_margin="4dp"/>
+            <ImageView android:id="@+id/ivDay7" android:layout_width="30dp" android:layout_height="30dp" android:src="@drawable/ic_streak_filled" android:layout_margin="4dp"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnAwesome"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Awesome!"
+            android:backgroundTint="#4CAF50"
+            android:textColor="@android:color/white"
+            android:paddingStart="32dp"
+            android:paddingEnd="32dp"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:cornerRadius="24dp"
+            />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

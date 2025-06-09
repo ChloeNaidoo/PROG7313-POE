@@ -5,12 +5,19 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
+<<<<<<< HEAD
 import android.widget.Toast
+=======
+>>>>>>> 0542f51 (final)
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import android.widget.Button
+<<<<<<< HEAD
+=======
+import com.fake.wastingmoney.utils.WelcomeConfettiDialog // Import the dialog class
+>>>>>>> 0542f51 (final)
 
 class Home : AppCompatActivity() {
 
@@ -22,7 +29,11 @@ class Home : AppCompatActivity() {
     private lateinit var cardCategories: CardView
     private lateinit var cardTransactions: CardView
     private lateinit var cardDashboard: CardView
+<<<<<<< HEAD
     private lateinit var btnLogout: Button
+=======
+    private lateinit var btnLogout: Button // Corrected: This is a Button, not a CardView from your previous XML description
+>>>>>>> 0542f51 (final)
 
     private lateinit var auth: FirebaseAuth
 
@@ -44,7 +55,11 @@ class Home : AppCompatActivity() {
         cardCategories = findViewById(R.id.cardCategories)
         cardTransactions = findViewById(R.id.cardTransactions)
         cardDashboard = findViewById(R.id.cardDashboard)
+<<<<<<< HEAD
         btnLogout = findViewById(R.id.cardLogout) // Note: ID is cardLogout in XML but it's a Button
+=======
+        btnLogout = findViewById(R.id.cardLogout) // Assuming this is indeed a Button with ID cardLogout
+>>>>>>> 0542f51 (final)
 
         // Set personalized welcome message if user is logged in
         val currentUser = auth.currentUser
@@ -55,6 +70,18 @@ class Home : AppCompatActivity() {
             tvWelcome.text = "Welcome, User"
         }
 
+<<<<<<< HEAD
+=======
+        // --- Confetti Logic ---
+        // Check if the EXTRA_SHOW_WELCOME_CONFETTI flag is set in the intent
+        val showConfetti = intent.getBooleanExtra(MainActivity.EXTRA_SHOW_WELCOME_CONFETTI, false)
+        if (showConfetti) {
+            showWelcomeConfettiDialog()
+        }
+        // --- End Confetti Logic ---
+
+
+>>>>>>> 0542f51 (final)
         // Click listeners for navigation
         cardAddExpense.setOnClickListener {
             startActivity(Intent(this, AddExpense::class.java))
@@ -94,6 +121,16 @@ class Home : AppCompatActivity() {
         }, 2000)
     }
 
+<<<<<<< HEAD
+=======
+    // New private method to show the WelcomeConfettiDialog
+    private fun showWelcomeConfettiDialog() {
+        val dialog = WelcomeConfettiDialog()
+        // Use supportFragmentManager to show the dialog
+        dialog.show(supportFragmentManager, "WelcomeConfettiDialog")
+    }
+
+>>>>>>> 0542f51 (final)
     private fun logout() {
         auth.signOut()
         startActivity(Intent(this, MainActivity::class.java))

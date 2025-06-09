@@ -5,7 +5,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+<<<<<<< HEAD
 import android.provider.MediaStore
+=======
+>>>>>>> 0542f51 (final)
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
@@ -22,9 +25,13 @@ import androidx.core.content.FileProvider
 import com.fake.wastingmoney.model.Income
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+<<<<<<< HEAD
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
 import java.io.FileInputStream
+=======
+import java.io.File
+>>>>>>> 0542f51 (final)
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
