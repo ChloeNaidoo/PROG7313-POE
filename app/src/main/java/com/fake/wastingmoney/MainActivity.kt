@@ -5,11 +5,6 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-<<<<<<< HEAD
-import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthException
-=======
 import com.fake.wastingmoney.database.DatabaseHelper
 import com.fake.wastingmoney.utils.StreakAchievementDialog
 import com.fake.wastingmoney.utils.WelcomeConfettiDialog
@@ -19,7 +14,6 @@ import com.google.firebase.auth.FirebaseAuthException
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
->>>>>>> 0542f51 (final)
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,8 +23,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvRegisterLink: TextView
 
     private lateinit var auth: FirebaseAuth
-<<<<<<< HEAD
-=======
     private lateinit var dbHelper: DatabaseHelper
 
     // TAG for logging
@@ -40,7 +32,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_SHOW_WELCOME_CONFETTI = "show_welcome_confetti"
     }
->>>>>>> 0542f51 (final)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,16 +42,6 @@ class MainActivity : AppCompatActivity() {
         try {
             FirebaseApp.initializeApp(this)
             auth = FirebaseAuth.getInstance()
-<<<<<<< HEAD
-        } catch (e: Exception) {
-            Log.e("Firebase", "Initialization error", e)
-            Toast.makeText(this, "Firebase init failed", Toast.LENGTH_LONG).show()
-        }
-
-        // Redirect if already logged in
-        if (auth.currentUser != null) {
-            goToDashboard()
-=======
             dbHelper = DatabaseHelper(this)
         } catch (e: Exception) {
             Log.e(TAG, "Firebase or Database initialization error", e)
@@ -78,7 +59,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             goToDashboard(false) // No confetti on automatic re-login
->>>>>>> 0542f51 (final)
             return
         }
 
@@ -113,10 +93,6 @@ class MainActivity : AppCompatActivity() {
                 .addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
                         Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show()
-<<<<<<< HEAD
-                        goToDashboard()
-                        Log.e("LoginError", "login successful")
-=======
                         val firebaseUserEmail = auth.currentUser?.email
                         var showConfetti = false // Default to false
 
@@ -141,7 +117,6 @@ class MainActivity : AppCompatActivity() {
                         }
                         // goToDashboard is now called from within checkAndIncrementStreak or directly if localUserId is null.
                         // We will pass the 'showConfetti' flag from checkAndIncrementStreak to goToDashboard.
->>>>>>> 0542f51 (final)
 
                     } else {
                         val exception = task.exception
@@ -157,11 +132,7 @@ class MainActivity : AppCompatActivity() {
                             else -> "Login failed: ${exception?.localizedMessage}"
                         }
                         Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
-<<<<<<< HEAD
-                        Log.e("LoginError", exception?.message ?: "Unknown error", exception)
-=======
                         Log.e(TAG, exception?.message ?: "Unknown login error", exception)
->>>>>>> 0542f51 (final)
                     }
                 }
         }
@@ -171,13 +142,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-<<<<<<< HEAD
-    private fun goToDashboard() {
-        startActivity(Intent(this, DashboardActivity::class.java))
-        finish()
-    }
-}
-=======
     private fun showWelcomeConfettiDialog() {
         val dialog = WelcomeConfettiDialog()
         dialog.show(supportFragmentManager, "WelcomeConfettiDialog")
@@ -272,4 +236,3 @@ class MainActivity : AppCompatActivity() {
         finish() // Close MainActivity
     }
 }
->>>>>>> 0542f51 (final)

@@ -9,10 +9,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-<<<<<<< HEAD
-import android.provider.MediaStore
-=======
->>>>>>> 0542f51 (final)
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
@@ -28,19 +24,15 @@ import androidx.core.content.FileProvider
 import com.fake.wastingmoney.model.Expense
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
-<<<<<<< HEAD
-import com.google.firebase.storage.FirebaseStorage
 import java.io.File
-import java.io.FileInputStream
-=======
-import java.io.File
->>>>>>> 0542f51 (final)
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 import android.util.Base64
 import android.widget.Spinner
-import com.example.wastingmoney.ReminderReceiver
+import android.Manifest
+import android.os.Build
+import com.fake.wastingmoney.utils.ReminderReceiver
 
 class AddExpense : AppCompatActivity() {
 
@@ -50,12 +42,10 @@ class AddExpense : AppCompatActivity() {
     private lateinit var btnDatePicker: Button
     private lateinit var btnUploadDocument: Button
     private lateinit var btnSaveExpense: Button
-    private lateinit var menuIcon: LinearLayout // Added menu icon
+    private lateinit var menuIcon: LinearLayout
     private lateinit var spinnerCurrency: Spinner
     private lateinit var btnSetReminder: Button
 
-
-    // Added Firebase auth for menu functionality
     private lateinit var auth: FirebaseAuth
 
     private val calendar = Calendar.getInstance()
@@ -63,22 +53,26 @@ class AddExpense : AppCompatActivity() {
     private var selectedDocumentUri: Uri? = null
     private var tempCameraFile: File? = null
 
+    // Variable to store the time for scheduling after permission is granted
+    private var pendingReminderTimeInMillis: Long = -1
+
     companion object {
         private const val STORAGE_PERMISSION_CODE = 1001
         private const val CAMERA_PERMISSION_CODE = 1002
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1003 // New request code
     }
 
     private val exchangeRates = mapOf(
-        "ZAR" to 1.0,   // South African Rand (base currency)
-        "USD" to 18.5,  // United States Dollar
-        "EUR" to 20.1,  // Euro
-        "GBP" to 23.5,  // British Pound
-        "JPY" to 0.12,  // Japanese Yen
-        "AUD" to 12.0,  // Australian Dollar
-        "CAD" to 11.5,  // Canadian Dollar
-        "CHF" to 20.8,  // Swiss Franc
-        "CNY" to 2.5,   // Chinese Yuan
-        "INR" to 0.22   // Indian Rupee
+        "ZAR" to 1.0,
+        "USD" to 18.5,
+        "EUR" to 20.1,
+        "GBP" to 23.5,
+        "JPY" to 0.12,
+        "AUD" to 12.0,
+        "CAD" to 11.5,
+        "CHF" to 20.8,
+        "CNY" to 2.5,
+        "INR" to 0.22
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,21 +80,20 @@ class AddExpense : AppCompatActivity() {
 
         try {
             setContentView(R.layout.activity_add_expense)
-            initializeFirebase() // Initialize Firebase Auth
+            initializeFirebase()
             initializeViews()
             setupCategoryDropdown()
             setupDatePicker()
             setupClickListeners()
-            setupMenuListener() // Setup menu functionality
-            setupCurrencySpinner() // Setup currency spinner
-            setupReminderButton() // Setup reminder button
+            setupMenuListener()
+            setupCurrencySpinner()
+            setupReminderButton()
         } catch (e: Exception) {
             Toast.makeText(this, "Error loading AddExpense: ${e.message}", Toast.LENGTH_LONG).show()
             finish()
         }
     }
 
-    // Initialize Firebase Auth
     private fun initializeFirebase() {
         auth = FirebaseAuth.getInstance()
     }
@@ -113,7 +106,7 @@ class AddExpense : AppCompatActivity() {
             btnDatePicker = findViewById(R.id.btn_date_picker)
             btnUploadDocument = findViewById(R.id.btn_upload_document)
             btnSaveExpense = findViewById(R.id.btn_save_expense)
-            menuIcon = findViewById(R.id.menuIcon) // Initialize menu icon
+            menuIcon = findViewById(R.id.menuIcon)
             spinnerCurrency = findViewById(R.id.spinner_currency)
             btnSetReminder = findViewById(R.id.btn_set_reminder)
         } catch (e: Exception) {
@@ -137,14 +130,12 @@ class AddExpense : AppCompatActivity() {
         }
     }
 
-    // Setup menu listener
     private fun setupMenuListener() {
         menuIcon.setOnClickListener {
             showMenuDialog()
         }
     }
 
-    // Show menu dialog with same options as AddIncome
     private fun showMenuDialog() {
         val menuOptions = arrayOf(
             "🏠 Home",
@@ -173,7 +164,6 @@ class AddExpense : AppCompatActivity() {
             .show()
     }
 
-    // Navigation methods
     private fun navigateToHome() {
         startActivity(Intent(this, Home::class.java))
         finish()
@@ -216,7 +206,7 @@ class AddExpense : AppCompatActivity() {
 
     private fun setupClickListeners() {
         btnSaveExpense.setOnClickListener {
-            saveExpenseData() // Renamed to avoid conflict
+            saveExpenseData()
         }
 
         btnUploadDocument.setOnClickListener {
@@ -232,7 +222,8 @@ class AddExpense : AppCompatActivity() {
                     this,
                     { _, hourOfDay, minute ->
                         calendar.set(year, month, dayOfMonth, hourOfDay, minute)
-                        scheduleNotification(calendar.timeInMillis)
+                        pendingReminderTimeInMillis = calendar.timeInMillis
+                        requestNotificationPermissionAndSchedule() // Request permission first
                     },
                     calendar.get(Calendar.HOUR_OF_DAY),
                     calendar.get(Calendar.MINUTE),
@@ -247,7 +238,39 @@ class AddExpense : AppCompatActivity() {
         datePicker.show()
     }
 
+    private fun requestNotificationPermissionAndSchedule() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                // Permission already granted, schedule the notification
+                scheduleNotification(pendingReminderTimeInMillis)
+            } else {
+                // Request permission
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        } else {
+            // No permission needed for older Android versions, schedule directly
+            scheduleNotification(pendingReminderTimeInMillis)
+        }
+    }
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission granted, schedule the notification
+            scheduleNotification(pendingReminderTimeInMillis)
+        } else {
+            // Permission denied
+            Toast.makeText(this, "Notification permission denied. Cannot set reminder.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun scheduleNotification(timeInMillis: Long) {
+        if (timeInMillis == -1L) {
+            Toast.makeText(this, "Reminder time not set.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val intent = Intent(this, ReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             this, 0, intent,
@@ -257,10 +280,8 @@ class AddExpense : AppCompatActivity() {
         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
 
-        Toast.makeText(this, "Reminder set!", Toast.LENGTH_SHORT).show()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
-        }
+        Toast.makeText(this, "Reminder set for ${SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date(timeInMillis))}", Toast.LENGTH_LONG).show()
+        pendingReminderTimeInMillis = -1 // Reset after scheduling
     }
 
     private fun showUploadOptions() {
@@ -281,7 +302,6 @@ class AddExpense : AppCompatActivity() {
     private fun takePhoto() {
         if (checkCameraPermission()) {
             try {
-                // Create a file in internal storage for the photo
                 tempCameraFile = createInternalCameraFile()
                 val photoUri = FileProvider.getUriForFile(
                     this,
@@ -307,11 +327,9 @@ class AddExpense : AppCompatActivity() {
 
     private fun selectDocument() {
         try {
-            // For Android 13+ (API 33+), we don't need READ_EXTERNAL_STORAGE for document picker
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 documentPickerLauncher.launch("*/*")
             } else {
-                // For older versions, check permission
                 if (checkStoragePermission()) {
                     documentPickerLauncher.launch("*/*")
                 } else {
@@ -378,7 +396,6 @@ class AddExpense : AppCompatActivity() {
                 "application/msword" -> "doc"
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> "docx"
                 else -> {
-                    // Try to get extension from URI path
                     val path = uri.path
                     if (path != null && path.contains(".")) {
                         path.substringAfterLast(".")
@@ -393,12 +410,12 @@ class AddExpense : AppCompatActivity() {
     }
 
     private fun checkStoragePermission(): Boolean {
-        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            true // No permission needed for document picker on Android 13+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            true
         } else {
             ContextCompat.checkSelfPermission(
                 this,
-                android.Manifest.permission.READ_EXTERNAL_STORAGE
+                Manifest.permission.READ_EXTERNAL_STORAGE
             ) == PackageManager.PERMISSION_GRANTED
         }
     }
@@ -406,14 +423,14 @@ class AddExpense : AppCompatActivity() {
     private fun checkCameraPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             this,
-            android.Manifest.permission.CAMERA
+            Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestStoragePermission() {
         ActivityCompat.requestPermissions(
             this,
-            arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE),
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
             STORAGE_PERMISSION_CODE
         )
     }
@@ -421,7 +438,7 @@ class AddExpense : AppCompatActivity() {
     private fun requestCameraPermission() {
         ActivityCompat.requestPermissions(
             this,
-            arrayOf(android.Manifest.permission.CAMERA),
+            arrayOf(Manifest.permission.CAMERA),
             CAMERA_PERMISSION_CODE
         )
     }
@@ -447,6 +464,8 @@ class AddExpense : AppCompatActivity() {
                     Toast.makeText(this, "Camera permission denied", Toast.LENGTH_SHORT).show()
                 }
             }
+            // The new notification permission request is handled by registerForActivityResult,
+            // so we don't need a specific case here for NOTIFICATION_PERMISSION_REQUEST_CODE
         }
     }
 
@@ -462,7 +481,6 @@ class AddExpense : AppCompatActivity() {
     }
 
     private fun setupDatePicker() {
-        // Set initial date
         btnDatePicker.text = dateFormat.format(calendar.time)
 
         btnDatePicker.setOnClickListener {
@@ -484,12 +502,11 @@ class AddExpense : AppCompatActivity() {
             year, month, day
         )
 
-        // Set max date to today (can't add future expenses)
         datePickerDialog.datePicker.maxDate = System.currentTimeMillis()
         datePickerDialog.show()
     }
 
-    private fun saveExpenseData() { // Renamed to avoid conflict
+    private fun saveExpenseData() {
         if (!validateInputs()) {
             return
         }
@@ -500,26 +517,23 @@ class AddExpense : AppCompatActivity() {
         val date = btnDatePicker.text.toString()
         val selectedCurrency = spinnerCurrency.selectedItem.toString()
         val conversionRate = exchangeRates[selectedCurrency] ?: 1.0
-        val amount = amountStr.toDouble() * conversionRate // Convert to ZAR for storage or base currency
+        val amount = amountStr.toDouble() * conversionRate
 
-        // Check if user is authenticated
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
             Toast.makeText(this, "Please login to save expense", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Create expense object
         val expense = Expense(
             amount = amount,
             description = description,
             category = category,
             date = date,
             timestamp = System.currentTimeMillis(),
-            documentBase64 = null // Will be updated if document upload succeeds
+            documentBase64 = null
         )
 
-        // Save to Firebase (upload document first if selected)
         if (selectedDocumentUri != null) {
             uploadDocumentThenSave(uid, expense)
         } else {
@@ -532,7 +546,6 @@ class AddExpense : AppCompatActivity() {
         val description = etDescription.text.toString().trim()
         val category = spinnerCategory.text.toString().trim()
 
-        // Validate amount
         if (amountStr.isEmpty()) {
             etAmount.error = "Amount is required"
             etAmount.requestFocus()
@@ -552,7 +565,6 @@ class AddExpense : AppCompatActivity() {
             return false
         }
 
-        // Validate description
         if (description.isEmpty()) {
             etDescription.error = "Description is required"
             etDescription.requestFocus()
@@ -565,14 +577,12 @@ class AddExpense : AppCompatActivity() {
             return false
         }
 
-        // Validate category
         if (category.isEmpty()) {
             spinnerCategory.error = "Please select or enter a category"
             spinnerCategory.requestFocus()
             return false
         }
 
-        // Clear any previous errors
         etAmount.error = null
         etDescription.error = null
         spinnerCategory.error = null
@@ -600,10 +610,8 @@ class AddExpense : AppCompatActivity() {
 
             val base64String = Base64.encodeToString(bytes, Base64.DEFAULT)
 
-            // Attach the base64 string to the expense
             val expenseWithDoc = expense.copy(documentBase64 = base64String)
 
-            // Save to Firebase
             saveToFirebase(uid, expenseWithDoc)
 
         } catch (e: Exception) {
@@ -631,7 +639,6 @@ class AddExpense : AppCompatActivity() {
             return
         }
 
-        // Show loading state
         btnSaveExpense.isEnabled = false
         btnSaveExpense.text = "Saving..."
 
@@ -639,19 +646,10 @@ class AddExpense : AppCompatActivity() {
             .addOnSuccessListener {
                 Toast.makeText(this, "Expense saved successfully!", Toast.LENGTH_SHORT).show()
 
-                // Clean up temporary files
                 cleanupTempFiles()
-
-                // Clear form
                 clearForm()
-
-                // Update budget data if needed
                 updateBudgetData(expense.category, expense.amount)
-
-                // Set result to indicate success and redirect to transactions
                 setResult(RESULT_OK)
-
-                // Navigate back to transactions page
                 redirectToTransactions()
             }
             .addOnFailureListener { exception ->
@@ -662,7 +660,6 @@ class AddExpense : AppCompatActivity() {
                 ).show()
             }
             .addOnCompleteListener {
-                // Reset button state
                 resetButtonState()
             }
     }
@@ -681,7 +678,6 @@ class AddExpense : AppCompatActivity() {
     }
 
     private fun updateBudgetData(category: String, amount: Double) {
-        // Update budget data for dashboard categories
         val dashboardCategories = listOf("LIGHTS", "CLOTHES", "CAR", "TOILETRIES")
 
         if (category.uppercase() in dashboardCategories) {
@@ -714,14 +710,12 @@ class AddExpense : AppCompatActivity() {
         selectedDocumentUri = null
         tempCameraFile = null
 
-        // Clear focus and hide keyboard
         etAmount.clearFocus()
         etDescription.clearFocus()
         spinnerCategory.clearFocus()
     }
 
     override fun onBackPressed() {
-        // Check if there's unsaved data
         val hasUnsavedData = etAmount.text.isNotEmpty() ||
                 etDescription.text.isNotEmpty() ||
                 spinnerCategory.text.isNotEmpty() ||
@@ -748,10 +742,8 @@ class AddExpense : AppCompatActivity() {
         cleanupTempFiles()
     }
 
-    // Document picker launcher
     private val documentPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            // Copy the file to internal storage to ensure we have persistent access
             copyFileToInternalStorage(uri) { internalUri ->
                 if (internalUri != null) {
                     selectedDocumentUri = internalUri
@@ -767,10 +759,8 @@ class AddExpense : AppCompatActivity() {
         }
     }
 
-    // Image picker launcher
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            // Copy the file to internal storage to ensure we have persistent access
             copyFileToInternalStorage(uri) { internalUri ->
                 if (internalUri != null) {
                     selectedDocumentUri = internalUri
@@ -786,7 +776,6 @@ class AddExpense : AppCompatActivity() {
         }
     }
 
-    // Camera launcher
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success && tempCameraFile != null && tempCameraFile!!.exists()) {
             selectedDocumentUri = Uri.fromFile(tempCameraFile)

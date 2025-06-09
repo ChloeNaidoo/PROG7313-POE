@@ -59,10 +59,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-auth")
-<<<<<<< HEAD
-=======
 
     // Lottie Animation Library (Added)
     implementation (libs.lottie)
->>>>>>> 0542f51 (final)
 }

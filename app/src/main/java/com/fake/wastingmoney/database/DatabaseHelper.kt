@@ -4,31 +4,20 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-<<<<<<< HEAD
-import com.fake.wastingmoney.model.*
-=======
 import com.fake.wastingmoney.model.* // Assuming these models (User, Category, etc.) are in model package
->>>>>>> 0542f51 (final)
 
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         private const val DATABASE_NAME = "BudgetTracker.db"
-<<<<<<< HEAD
-        private const val DATABASE_VERSION = 1
-=======
         private const val DATABASE_VERSION = 2 // Increment database version for schema changes!
->>>>>>> 0542f51 (final)
 
         // Table names
         private const val TABLE_USERS = "users"
         private const val TABLE_CATEGORIES = "categories"
         private const val TABLE_EXPENSES = "expenses"
         private const val TABLE_BUDGET_GOALS = "budget_goals"
-<<<<<<< HEAD
-=======
         private const val TABLE_STREAKS = "streaks" // NEW TABLE
->>>>>>> 0542f51 (final)
 
         // Common columns
         private const val KEY_ID = "id"
@@ -39,11 +28,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         // Category table columns
         private const val KEY_CATEGORY_NAME = "name"
-<<<<<<< HEAD
-        private const val KEY_USER_ID = "user_id"
-=======
         private const val KEY_USER_ID = "user_id" // Re-used for foreign keys
->>>>>>> 0542f51 (final)
 
         // Expense table columns
         private const val KEY_DATE = "date"
@@ -59,13 +44,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val KEY_MAX_GOAL = "max_monthly_goal"
         private const val KEY_MONTH = "month"
         private const val KEY_YEAR = "year"
-<<<<<<< HEAD
-=======
 
         // Streak table columns
         private const val KEY_STREAK_COUNT = "streak_count" // NEW
         private const val KEY_LAST_LOGIN_DATE = "last_login_date" // NEW
->>>>>>> 0542f51 (final)
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -118,8 +100,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             )
         """.trimIndent()
 
-<<<<<<< HEAD
-=======
         // Create streaks table (NEW)
         val createStreaksTable = """
             CREATE TABLE $TABLE_STREAKS (
@@ -131,19 +111,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             )
         """.trimIndent()
 
->>>>>>> 0542f51 (final)
         db.execSQL(createUsersTable)
         db.execSQL(createCategoriesTable)
         db.execSQL(createExpensesTable)
         db.execSQL(createBudgetGoalsTable)
-<<<<<<< HEAD
-    }
-
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_BUDGET_GOALS")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_EXPENSES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_CATEGORIES")
-=======
         db.execSQL(createStreaksTable) // Execute new table creation
     }
 
@@ -153,16 +124,11 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.execSQL("DROP TABLE IF EXISTS $TABLE_EXPENSES")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_CATEGORIES")
         db.execSQL("DROP TABLE IF EXISTS $TABLE_STREAKS") // Drop new table
->>>>>>> 0542f51 (final)
         db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
         onCreate(db)
     }
 
-<<<<<<< HEAD
-    // User operations
-=======
     // User operations (Existing)
->>>>>>> 0542f51 (final)
     fun addUser(username: String, password: String): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -200,9 +166,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
     }
 
-<<<<<<< HEAD
-    // Category operations
-=======
     /**
      * Retrieves the SQLite user ID for a given username (email).
      * This is crucial for linking Firebase Auth users to local SQLite data.
@@ -227,7 +190,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     // Category operations (Existing)
->>>>>>> 0542f51 (final)
     fun addCategory(name: String, userId: Long): Long {
         val db = this.writableDatabase
         val values = ContentValues().apply {
@@ -265,8 +227,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.close()
         return categories
     }
-<<<<<<< HEAD
-=======
 
     // NEW STREAK OPERATIONS
 
@@ -330,5 +290,4 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         db.close()
         return affectedRows
     }
->>>>>>> 0542f51 (final)
 }

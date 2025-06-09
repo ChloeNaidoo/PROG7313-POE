@@ -1,4 +1,5 @@
-package com.example.wastingmoney
+
+package com.fake.wastingmoney.utils // This package must match the one in your AndroidManifest.xml
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -18,7 +19,9 @@ class ReminderReceiver : BroadcastReceiver() {
                 channelId,
                 "Expense Reminders",
                 NotificationManager.IMPORTANCE_HIGH
-            )
+            ).apply {
+                description = "Channel for expense reminder notifications"
+            }
             notificationManager.createNotificationChannel(channel)
         }
 
@@ -27,6 +30,7 @@ class ReminderReceiver : BroadcastReceiver() {
             .setContentTitle("Expense Reminder")
             .setContentText("You have an upcoming expense!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true) // Dismiss notification when tapped
             .build()
 
         notificationManager.notify(1, notification)
